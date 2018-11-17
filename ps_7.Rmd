@@ -1,0 +1,18 @@
+---
+title: "Problem Set 7"
+author: "Maddie Chai"
+date: "11/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+download.file(url = "https://goo.gl/ZRCBda",
+              destfile = "master.zip",
+              quiet = TRUE,
+              mode = "wb")
+unzip("master.zip")
+```
+
+
