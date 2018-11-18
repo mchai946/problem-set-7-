@@ -1,6 +1,6 @@
 ---
 title: "Problem Set 7"
-author: "Maddie Chai & Allie Russell"
+author: "Maddie Chai"
 date: "11/16/2018"
 output: html_document
 ---
@@ -9,17 +9,57 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
+library(fs)
 download.file(url = "https://goo.gl/ZRCBda",
               destfile = "master.zip",
               quiet = TRUE,
               mode = "wb")
 unzip("master.zip")
+file_names <- dir_ls("2018-live-poll-results-master/data/")
+all_races <- map_dfr(file_names, read_csv, .id = "source") %>%
+   mutate(senate = str_detect(source, pattern = "sen")) %>%
+   filter(senate == TRUE) %>%
+  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
+                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
+                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
+                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
+                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
+  select(source, response, final_weight) %>%
+  group_by(response, source) %>%
+  tally(wt = final_weight) %>%
+  spread(response, n) 
 
-final_results <- read_csv("mt_2_results.csv")
+all_races[is.na(all_races)] <- 0
 
-az <- read_csv("2018-live-poll-results-master/data/elections-poll-azsen-3.csv")
+all_races_2 <- all_races %>%
+  mutate(total = Dem + Rep + Und + `3` + `4` + `5`) %>%
+  mutate(rep_advantage = ((Rep - Dem) / total)*100) %>%
+  select(source, rep_advantage) 
 
-new <- read_csv("2018-11-07_538-senate-forecasts_withresults.csv")
+colnames(all_races_2)[1] <- "state"
+
+all_races_2[,-1] <-round(all_races_2[,-1],1)
+  
+
+new2 <- read_csv("mt_2_results_new_2.csv") %>%
+  filter(district == "sen") %>%
+  mutate(total = rep_votes + dem_votes + other_votes) %>%
+  mutate(rep_advantage = ((rep_votes - dem_votes) / total)*100) %>%
+  select(state, win_party, rep_advantage) %>%
+  mutate(state = case_when(state == "AZ" ~ "Arizona",
+                           state == "NV" ~ "Nevada",
+                           state == "TN" ~ "Tennessee",
+                           state == "FL" ~ "Florida",
+                           state == "TX" ~ "Texas"))
+
+new2[,-1:-2] <-round(new2[,-1:-2],1)
+colnames(new2)[3] <- "rep_advantage_final"
+
+merged <- right_join(all_races_2, new2, .id = "state") %>%
+  select(state, win_party, rep_advantage, rep_advantage_final) %>%
+  mutate(p_error = rep_advantage_final - rep_advantage)
+
+
 ```
 
 
