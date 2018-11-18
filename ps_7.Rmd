@@ -8,11 +8,18 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(readr)
 download.file(url = "https://goo.gl/ZRCBda",
               destfile = "master.zip",
               quiet = TRUE,
               mode = "wb")
 unzip("master.zip")
+
+final_results <- read_csv("mt_2_results.csv")
+
+az <- read_csv("2018-live-poll-results-master/data/elections-poll-azsen-3.csv")
+
+new <- read_csv("2018-11-07_538-senate-forecasts_withresults.csv")
 ```
 
 
