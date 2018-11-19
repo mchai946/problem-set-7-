@@ -10,15 +10,19 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(fs)
+
 download.file(url = "https://goo.gl/ZRCBda",
               destfile = "master.zip",
               quiet = TRUE,
               mode = "wb")
 unzip("master.zip")
+
 file_names <- dir_ls("2018-live-poll-results-master/data/")
-all_races <- map_dfr(file_names, read_csv, .id = "source") %>%
-   mutate(senate = str_detect(source, pattern = "sen")) %>%
-   filter(senate == TRUE) %>%
+x <- map_dfr(file_names, read_csv, .id = "source") 
+
+Upshot <- x %>%
+  mutate(senate = str_detect(source, pattern = "sen")) %>%
+  filter(senate == TRUE) %>%
   mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
                             source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
                             source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
@@ -29,19 +33,20 @@ all_races <- map_dfr(file_names, read_csv, .id = "source") %>%
   tally(wt = final_weight) %>%
   spread(response, n) 
 
-all_races[is.na(all_races)] <- 0
+Upshot[is.na(Upshot)] <- 0
+colnames(Upshot)[1] <- "state"
 
-all_races_2 <- all_races %>%
+Upshot <- Upshot %>%
   mutate(total = Dem + Rep + Und + `3` + `4` + `5`) %>%
   mutate(rep_advantage = ((Rep - Dem) / total)*100) %>%
-  select(source, rep_advantage) 
+  select(state, rep_advantage) 
 
-colnames(all_races_2)[1] <- "state"
-
-all_races_2[,-1] <-round(all_races_2[,-1],1)
+Upshot[,-1] <-round(Upshot[,-1],1)
   
 
-new2 <- read_csv("mt_2_results_new_2.csv") %>%
+y <- read_csv("mt_2_results_new_2.csv")
+
+final_results <- y %>%  
   filter(district == "sen") %>%
   mutate(total = rep_votes + dem_votes + other_votes) %>%
   mutate(rep_advantage = ((rep_votes - dem_votes) / total)*100) %>%
@@ -52,14 +57,113 @@ new2 <- read_csv("mt_2_results_new_2.csv") %>%
                            state == "FL" ~ "Florida",
                            state == "TX" ~ "Texas"))
 
-new2[,-1:-2] <-round(new2[,-1:-2],1)
-colnames(new2)[3] <- "rep_advantage_final"
+final_results[,-1:-2] <-round(final_results[,-1:-2],1)
+colnames(final_results)[3] <- "rep_advantage_final"
 
-merged <- right_join(all_races_2, new2, .id = "state") %>%
+z <- full_join(Upshot, final_results, .id = "state") 
+
+combined <- z %>%
   select(state, win_party, rep_advantage, rep_advantage_final) %>%
   mutate(p_error = rep_advantage_final - rep_advantage)
-
-
 ```
 
+```{r}
+sen_dem <- x %>%
+  select(source, sdem_fav, final_weight) %>%
+  mutate(senate = str_extract(source, pattern = "sen")) %>%
+  filter(senate == "sen") %>%
+  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
+                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
+                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
+                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
+                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
+  group_by(source, sdem_fav) %>%
+  tally(wt = final_weight) %>%
+  spread(sdem_fav, n) %>%
+  mutate(total = `Don't know` + `Favorable` + `Unfavorable`) %>%
+  mutate(`Favorable` = (`Favorable`/total)*100) %>%
+  select(source, Favorable)
+
+
+sen_dem[,-1] <-round(sen_dem[,-1],1)  
+colnames(sen_dem)[1] <- "state"
+
+zz <- full_join(combined, sen_dem, .id = "state")
+```
+
+```{r}
+approve <- x %>%
+  select(source, approve, final_weight) %>%
+  mutate(senate = str_extract(source, pattern = "sen")) %>%
+  filter(senate == "sen") %>%
+  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
+                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
+                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
+                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
+                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
+  group_by(source, approve) %>%
+  tally(wt = final_weight) %>%
+  spread(approve, n) %>%
+  mutate(total = `Approve` + `Disapp.` + `Don't know`) %>%
+  mutate(`Approve` = (`Approve`/total)*100) %>%
+  select(source, Approve)
+
+
+approve[,-1] <-round(approve[,-1],1)  
+colnames(approve)[1] <- "state"
+
+zzz <- full_join(zz, approve, .id = "state")
+```
+
+```{r}
+sen_rep <- x %>%
+  select(source, srep_fav, final_weight) %>%
+  mutate(senate = str_extract(source, pattern = "sen")) %>%
+  filter(senate == "sen") %>%
+  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
+                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
+                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
+                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
+                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
+  group_by(source, srep_fav) %>%
+  tally(wt = final_weight) %>%
+  spread(srep_fav, n) %>%
+  mutate(total = `Don't know` + `Favorable` + `Unfavorable`) %>%
+  mutate(`Favorable 2` = (`Favorable`/total)*100) %>%
+  select(source, `Favorable 2`)
+
+
+sen_rep[,-1] <-round(sen_rep[,-1],1)  
+colnames(sen_rep)[1] <- "state"
+
+zzzz <- full_join(zzz, sen_rep, .id = "state")
+```
+
+```{r}
+SENC <- x %>%
+  select(source, SENC, final_weight) %>%
+  mutate(senate = str_extract(source, pattern = "sen")) %>%
+  filter(senate == "sen") %>%
+  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
+                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
+                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
+                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
+                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
+  group_by(source, SENC) %>%
+  tally(wt = final_weight) %>%
+  spread(SENC, n) %>%
+  mutate(total = `Dem.` + `Don't know` + `Rep.`) %>%
+  mutate(SENC_Dem = (`Dem.`/total)*100) %>%
+  select(source, SENC_Dem)
+
+
+SENC[,-1] <-round(SENC[,-1],1)  
+colnames(SENC)[1] <- "state"
+
+xyz <- full_join(zzzz, SENC, .id = "state")
+colnames(xyz)[8] <- "sen_rep"
+colnames(xyz)[6] <- "sen_dem"
+colnames(xyz)[7] <- "approve"
+write_rds(xyz, "xyz.rds")
+```
 
