@@ -12,26 +12,32 @@ library(base)
 library(janitor)
 library(extrafont)
 
-
+#Reading in the data
 my_data <- read_rds("xyz.rds")
-options <- c("Prediction Error" = "p_error", "Senate Democrat" = "sen_dem", "Senate Republican" = "sen_rep", "Trump Approval" = "approve", "SENC Democrat" = "SENC_Dem")
 
-# Define UI for application that draws a histogram
+#Assigning variable names to options in the drop-down menu
+options <- c("Poll Prediction Error" = "p_error", 
+             "Senate Democrat" = "sen_dem", 
+             "Senate Republican" = "sen_rep", 
+             "Trump Approval Rating" = "approve", 
+             "SENC Democrat" = "SENC_Dem")
+
+# Define UI for application that draws a scatterplot
 ui <- fluidPage(
   
   # Application title
-  titlePanel("GOV1005 PSET 7"),
+  titlePanel("What do Poll Respondents in States with Key Senate Races Think?"),
   
-  # Sidebar  
+  # Sidebar   
   sidebarLayout(
     sidebarPanel(
       selectInput(inputId = "y", #internal label
-                  label = "Choose data to see",
+                  label = "Choose your y-axis",
                   choices = c(options),
-                  selected = "Prediction Error")),
+                  selected = "Poll Prediction Error")),
     
     
-    # Show a plot of the generated distribution
+    # Show titles and other headers
     mainPanel(
       h3("2018 Midterms: Key Senate Races"),
       p("Before the election, the New York Times identified several Senate races as too close to call. Here are the results from their polls."),
@@ -39,7 +45,7 @@ ui <- fluidPage(
       plotlyOutput("distplot"))))
 
 
-# Define server logic required to draw a histogram
+# Define server logic required to draw a scatterplot
 server <- function(input, output, session) {
   
   output$distplot <- renderPlotly({
@@ -52,8 +58,9 @@ server <- function(input, output, session) {
                theme_minimal() +
                theme(text=element_text(family="Times New Roman", face="bold", size=12)))}) 
 
+  #Create reactive expression for displaying text based off of user input.
   output$description <- renderText({ 
-    paste("You have selected", input$y)
+    paste("You have selected", input$y, ". Here are the results from NYT poll respondents and", input$y, ".")
     })
 }
 
