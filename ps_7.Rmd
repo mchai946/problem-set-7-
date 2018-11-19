@@ -69,7 +69,7 @@ combined <- z %>%
 
 ```{r}
 sen_dem <- x %>%
-  select(source, sdem_fav, final_weight) %>%
+  select(source, sdem_fav, final_weight) %>% 
   mutate(senate = str_extract(source, pattern = "sen")) %>%
   filter(senate == "sen") %>%
   mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
