@@ -1,6 +1,6 @@
 ---
 title: "Problem Set 7"
-author: "Maddie Chai"
+author: "Maddie Chai & Allie Russell"
 date: "11/16/2018"
 output: html_document
 ---
@@ -88,7 +88,7 @@ sen_dem <- x %>%
 sen_dem[,-1] <-round(sen_dem[,-1],1)  
 colnames(sen_dem)[1] <- "state"
 
-zz <- full_join(combined, sen_dem, .id = "state")
+x1 <- full_join(combined, sen_dem, .id = "state")
 ```
 
 ```{r}
@@ -112,7 +112,7 @@ approve <- x %>%
 approve[,-1] <-round(approve[,-1],1)  
 colnames(approve)[1] <- "state"
 
-zzz <- full_join(zz, approve, .id = "state")
+x2 <- full_join(x1, approve, .id = "state")
 ```
 
 ```{r}
@@ -136,34 +136,14 @@ sen_rep <- x %>%
 sen_rep[,-1] <-round(sen_rep[,-1],1)  
 colnames(sen_rep)[1] <- "state"
 
-zzzz <- full_join(zzz, sen_rep, .id = "state")
+my_data <- full_join(x2, sen_rep, .id = "state")
 ```
 
 ```{r}
-SENC <- x %>%
-  select(source, SENC, final_weight) %>%
-  mutate(senate = str_extract(source, pattern = "sen")) %>%
-  filter(senate == "sen") %>%
-  mutate(source = case_when(source == "2018-live-poll-results-master/data/elections-poll-azsen-3.csv" ~ "Arizona",
-                            source == "2018-live-poll-results-master/data/elections-poll-flsen-3.csv" ~ "Florida",
-                            source == "2018-live-poll-results-master/data/elections-poll-nvsen-2.csv" ~ "Nevada",
-                            source == "2018-live-poll-results-master/data/elections-poll-txsen-2.csv" ~ "Texas",
-                            source == "2018-live-poll-results-master/data/elections-poll-tnsen-2.csv" ~ "Tennessee")) %>%
-  group_by(source, SENC) %>%
-  tally(wt = final_weight) %>%
-  spread(SENC, n) %>%
-  mutate(total = `Dem.` + `Don't know` + `Rep.`) %>%
-  mutate(SENC_Dem = (`Dem.`/total)*100) %>%
-  select(source, SENC_Dem)
-
-
-SENC[,-1] <-round(SENC[,-1],1)  
-colnames(SENC)[1] <- "state"
-
-xyz <- full_join(zzzz, SENC, .id = "state")
-colnames(xyz)[8] <- "sen_rep"
-colnames(xyz)[6] <- "sen_dem"
-colnames(xyz)[7] <- "approve"
-write_rds(xyz, "xyz.rds")
+colnames(my_data)[6] <- "sen_dem"
+colnames(my_data)[7] <- "approve"
+colnames(my_data)[8] <- "sen_rep"
+write_rds(my_data, "my_data.rds")
 ```
+
 
